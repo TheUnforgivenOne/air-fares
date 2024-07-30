@@ -11,5 +11,10 @@
   "dependencies": {
     "dotenv": "^16.4.5"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.142",
+    "serverless-dotenv-plugin": "^6.0.0",
+    "serverless-plugin-typescript": "^2.1.5",
+    "typescript": "^5.5.4"
+  }
 }

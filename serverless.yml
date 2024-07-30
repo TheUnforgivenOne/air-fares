@@ -6,6 +6,9 @@ provider:
   profile: personal
   region: eu-west-1
 
+plugins:
+  - serverless-dotenv-plugin
+
 functions:
   handleRequest:
     handler: handler.handleRequest
