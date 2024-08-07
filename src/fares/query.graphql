@@ -1,0 +1,13 @@
+query ($page: PageInput!, $id: String!, $pageNumber: Int, $limit: Int, $flatContext: FlatContextInput) {
+  standardFareModule(page: $page, id: $id, flatContext: $flatContext) {
+    __typename
+    fares(pageNumber: $pageNumber, limit: $limit) {
+      originCity
+      destinationCity
+      formattedTotalPrice
+      usdTotalPrice
+      formattedDepartureDate
+      __typename
+    }
+  }
+}
