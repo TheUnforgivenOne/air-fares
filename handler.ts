@@ -14,22 +14,28 @@ const generateResponse = (
 
 export const handleRequest: Handler<APIGatewayProxyEventV2> = async (event) => {
   const rawBody = event.body;
+
   if (!rawBody) {
-    console.log('Fail: Telegram sent empty update');
+    console.log('[ERROR] Telegram sent empty update');
     return generateResponse(500, 'Telegram sent empty update');
   }
 
-  const parsedUpdate = JSON.parse(rawBody);
-  console.log(parsedUpdate);
-
   const token = process.env.BOT_TOKEN ?? '';
   if (!token) {
-    console.log('Fail: Telegram bot token was not provided');
+    console.log('[ERROR] Telegram bot token was not provided');
     return generateResponse(500, 'Telegram bot token was not provided');
   }
 
-  const bot = new Bot(token);
-  await bot.handleUpdate(parsedUpdate);
+  try {
+    const parsedUpdate = JSON.parse(rawBody);
+    console.log('[INFO] parsed update', parsedUpdate);
+
+    const bot = new Bot(token);
+    await bot.handleUpdate(parsedUpdate);
+  } catch (e) {
+    console.log('[ERROR] Error while telegram update processing', e);
+    return generateResponse(500, 'Update process failed');
+  }
 
   return generateResponse(200, 'Update processed');
 };

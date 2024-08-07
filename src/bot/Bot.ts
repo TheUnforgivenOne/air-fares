@@ -1,40 +1,14 @@
+import { createApi, IAPI } from '../requests';
+import { EventEmitter } from 'events';
 import { IMessage, IUpdate } from './telegramTypes';
 
-interface IRequestParams {
-  endpoint: string;
-  method: 'GET' | 'POST';
-  query?: { [key: string]: string | number };
-  body?: { [key: string]: string | number | boolean };
-}
-
-class Bot {
+class Bot extends EventEmitter {
   private tgapi: string = 'https://api.telegram.org/bot';
-  private api: string;
+  private api: IAPI;
 
   constructor(token: string) {
-    this.api = this.tgapi + token;
-  }
-
-  private async request<T>({
-    endpoint,
-    method = 'GET',
-    query,
-    body = {},
-  }: IRequestParams): Promise<T> {
-    const url = new URL(this.api + endpoint);
-
-    if (query) {
-      Object.entries(query).forEach(([k, v]) =>
-        url.searchParams.set(k, String(v))
-      );
-    }
-
-    return fetch(url, {
-      method,
-      body: method === 'POST' ? JSON.stringify(body) : undefined,
-    })
-      .then((res) => res.json())
-      .then((res: { result: T }) => res.result);
+    super();
+    this.api = createApi(this.tgapi + token);
   }
 
   async handleUpdate(update: IUpdate) {
@@ -42,10 +16,25 @@ class Bot {
 
     try {
       const text = update.message.text;
-      // Some event emitter, or simpel regexps here
-      // console.log(update.message?.entities);
+      const entities = update.message?.entities;
 
-      await this.sendMessage(chatId, 'Done');
+      if (entities) {
+        const botCommand = entities.find((e) => e.type === 'bot_command');
+        if (botCommand) {
+          const start = botCommand.offset;
+          const end = botCommand.offset + botCommand.length;
+          const command = text.substring(start, end);
+          const params = text.substring(end).trim();
+
+          await this.sendMessage(
+            chatId,
+            `Command ${command}. Rest params: ${params}`
+          );
+          return;
+        }
+      }
+
+      await this.sendMessage(chatId, `Text message: ${text}`);
       console.log('Request processed', chatId, text);
     } catch (e) {
       await this.sendMessage(chatId, `Fail: ${e}`);
@@ -53,7 +42,7 @@ class Bot {
   }
 
   async sendMessage(chatId: number, text: string) {
-    const res = await this.request<IMessage>({
+    const res = await this.api.request<IMessage>({
       endpoint: '/sendMessage',
       method: 'GET',
       query: { chat_id: chatId, text },

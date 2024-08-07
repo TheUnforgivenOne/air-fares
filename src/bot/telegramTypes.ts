@@ -28,4 +28,5 @@ export interface IChat {
 export interface IMessageEntity {
   type: string;
   offset: number;
+  length: number;
 }
