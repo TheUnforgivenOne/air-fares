@@ -1,84 +1,38 @@
-import * as fs from 'fs';
-import { IAPI, createApi } from '../requests';
+import AbstractProvider from '../providers/AbstractProvider';
+import WizzAirProvider from '../providers/WizzAirProvider';
 
-class FaresFinder {
-  private baseUrl = 'https://vg-api.airtrfx.com';
-  private api: IAPI = createApi(this.baseUrl);
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-  constructor() {}
+export interface IFare {
+  fromCity: string;
+  fromAirportCode: string;
+  toCity: string;
+  toAirport: string;
+  departureDate: string;
+  usdPrice: number;
+  localPrice?: string;
+}
 
-  async getFaresFromCity() {
-    const query = fs.readFileSync('src/fares/query.graphql', 'utf-8');
-    const requestId = '64ee04d89ceb00b06307adef';
+// TODO: This level of abstraction will implement routes find logic that depends on provider
+class FareFinder<P extends AbstractProvider> {
+  private provider: P;
 
-    const res: any = await this.api.request({
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      endpoint: '/graphql',
-      method: 'POST',
-      body: {
-        query,
-        variables: {
-          id: requestId,
-          page: {
-            tenant: 'w6',
-            slug: 'cheap-flights-from-belgrade',
-            siteEdition: 'en-gb',
-          },
-          flatContext: {
-            templateId: '60ad2c4c46f6ab1000000716',
-            templateName: 'from-city',
-            originLocationLevel: 'City',
-            originGeoId: '792680',
-          },
-        },
-      },
-    });
-    res.data.standardFareModule.fares.forEach((fare) => {
-      console.log(fare);
-    });
+  constructor(Provider: new () => P) {
+    this.provider = new Provider();
   }
 
-  async getFaresToCity() {
-    const query = fs.readFileSync('src/fares/query.graphql', 'utf-8');
-    const requestId = '666c0974dab20537060fd7f5';
+  async getFaresFrom(origin: string) {
+    const fares = await this.provider.getFaresFrom(origin);
+    console.log(fares);
+  }
 
-    const res: any = await this.api.request({
-      headers: {
-        'Content-Type': 'application/json',
-        Accept: 'application/json',
-      },
-      endpoint: '/graphql',
-      method: 'POST',
-      body: {
-        query,
-        variables: {
-          id: requestId,
-          page: {
-            tenant: 'w6',
-            slug: 'cheap-flights-to-belgrade',
-            siteEdition: 'en-gb',
-          },
-          flatContext: {
-            templateId: '60ad2c4c46f6ab1000000716',
-            templateName: 'to-city',
-            destinationLocationLevel: 'City',
-            destinationGeoId: '792680',
-          },
-        },
-      },
-    });
-    res.data.standardFareModule.fares.forEach((fare) => {
-      console.log(fare);
-    });
+  async getFaresTo(destination: string) {
+    const fares = await this.provider.getFaresTo(destination);
+    console.log(fares);
   }
 }
 
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-const f = new FaresFinder();
-// f.getFaresFromCity();
-f.getFaresToCity();
+const finder = new FareFinder(WizzAirProvider);
+finder.getFaresFrom('Belgrade');
 
-export default FaresFinder;
+export default FareFinder;
